@@ -9,7 +9,7 @@ export default class Board extends Phaser.Group {
   cols: number
   tileTypes: number
   tilesSpec: Array<Array<number>>
-  tiles: Array<Tile>
+  tiles: Array<Array<Tile>>
 
   outline: Outline
   isTileSelected: boolean
@@ -30,17 +30,20 @@ export default class Board extends Phaser.Group {
   
   init() {
     this.fill()
-    this.swipe = new Swipe(this.game)
+    // this.swipe = new Swipe(this.game)
     this.onChildInputDown.add(this.onTileSelect, this)
     this.outline = new Outline(this.game, this)
   }
   
   fill() {
     for (let i = 0; i < this.rows; i++) {
+      this.tiles[i] = []
       for (let j = 0; j < this.cols; j++) {
         const tileId = this.tilesSpec[i][j]
         if (tileId > 0) {
-          this.addChild(this.createTile(i, j, tileId))
+          const tile = this.createTile(i, j, tileId)
+          this.tiles[i][j] = tile
+          this.addChild(tile)
         }
       }
     }
@@ -81,7 +84,7 @@ export default class Board extends Phaser.Group {
         
         if (isNeighbors) {
           this.outline.hide()
-          this.processNeighborTiles()
+          this.processNeighborTiles(tileData1, tileData2)
         } else {
           this.outline.show(x, y)
         }
@@ -90,14 +93,36 @@ export default class Board extends Phaser.Group {
   }
   
   // Check if two tiles are neigbors vertically or horizontally
-  isNeighborTiles(tileData1, tileData2): boolean {
-    const dx = Math.abs(tileData1.row - tileData2.row);
-    const dy = Math.abs(tileData1.col - tileData2.col);
+  isNeighborTiles(t1, t2): boolean {
+    const dx = Math.abs(t1.row - t2.row);
+    const dy = Math.abs(t1.col - t2.col);
     return (dx + dy === 1);
   }
 
-  processNeighborTiles() {
-    console.log(this.children);
+  processNeighborTiles(t1, t2) {
+    const tile1 = this.tiles[t1.row][t1.col]
+    const tile2 = this.tiles[t2.row][t2.col]
+    const tweenTime = 200
+    
+    const tween1 = this.game.add.tween(tile1).to({
+      x: tile2.position.x,
+      y: tile2.position.y
+    }, tweenTime, Phaser.Easing.Sinusoidal.InOut, true);
+
+    const tween2 = this.game.add.tween(tile2).to({
+      x: tile1.position.x,
+      y: tile1.position.y
+    }, tweenTime, Phaser.Easing.Sinusoidal.InOut, true);
+
+    tween2.onComplete.add(() => {
+      this.reversItemInList(t1, tile1, t2, tile2)
+    })
+  }
+
+  reversItemInList(t1, tile1, t2, tile2) {
+    // Swap processed tiles
+    this.tiles[t2.row][t2.col] = tile1;
+    this.tiles[t1.row][t1.col] = tile2;
   }
 
   toIndex(x: number, y: number) {
