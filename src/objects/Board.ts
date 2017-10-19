@@ -62,33 +62,30 @@ export default class Board extends Phaser.Group {
   onTileSelect(tile: Tile) {
     let x = tile.x
     let y = tile.y
-    let {row, col} = this.toIndex(x, y)
 
     if (this.outline.isVisible === false) {
       // First tile selected
-      console.log('First tile selected')
       this.outline.show(x, y)
+      return
+    }
+
+    if (x === this.outline.position.x && y === this.outline.position.y) {
+      // Same tile selected
+      this.outline.hide()
+      return
+    } 
+    
+    // Another tile selected
+    const t1 = this.toIndex(x, y)
+    const t2 = this.toIndex(this.outline.position.x, this.outline.position.y)
+    const isNeighbors = this.isNeighborTiles(t1, t2)
+    console.log('isNeighbors', isNeighbors, t1, t2)
+    
+    if (isNeighbors) {
+      this.outline.hide()
+      this.processNeighborTiles(t1, t2)
     } else {
-      if (x === this.outline.position.x && y === this.outline.position.y) {
-        // Same tile selected
-        console.log('Same tile selected')
-        this.outline.hide()
-      } else {
-        // Another tile selected
-        console.log('Another tile selected')
-        const tileData1 = this.toIndex(x, y)
-        const tileData2 = this.toIndex(this.outline.position.x, this.outline.position.y)
-        const isNeighbors = this.isNeighborTiles(tileData1, tileData2)
-        
-        console.log('isNeighbors', isNeighbors, tileData1, tileData2)
-        
-        if (isNeighbors) {
-          this.outline.hide()
-          this.processNeighborTiles(tileData1, tileData2)
-        } else {
-          this.outline.show(x, y)
-        }
-      }
+      this.outline.show(x, y)
     }
   }
   
@@ -103,7 +100,7 @@ export default class Board extends Phaser.Group {
     const tile1 = this.tiles[t1.row][t1.col]
     const tile2 = this.tiles[t2.row][t2.col]
     const tweenTime = 200
-    
+
     const tween1 = this.game.add.tween(tile1).to({
       x: tile2.position.x,
       y: tile2.position.y
@@ -115,6 +112,7 @@ export default class Board extends Phaser.Group {
     }, tweenTime, Phaser.Easing.Sinusoidal.InOut, true);
 
     tween2.onComplete.add(() => {
+      // Update tiles position when tween will complete
       this.reversItemInList(t1, tile1, t2, tile2)
     })
   }
