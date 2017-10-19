@@ -86,7 +86,6 @@ export default class Board extends Phaser.Group {
     const t1 = this.toIndex(x, y)
     const t2 = this.toIndex(this.outline.position.x, this.outline.position.y)
     const isNeighbors = this.isNeighborTiles(t1, t2)
-    console.log('isNeighbors', isNeighbors, t1, t2)
     
     if (isNeighbors) {
       this.outline.hide()
@@ -154,8 +153,6 @@ export default class Board extends Phaser.Group {
   findMatch(row: number, col: number) {
     let matchHor = this.findMatchHorizontally(row, col)
     let matchVert = this.findMatchVertically(row, col)
-
-    console.log(matchHor, matchVert);
 
     if (matchHor.length >= 3) {
       this.markTilesToRemove(matchHor)
