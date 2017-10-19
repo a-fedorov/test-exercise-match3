@@ -73,7 +73,6 @@ export default class Board extends Phaser.Group {
     if (this.outline.isVisible === false) {
       // First tile selected
       this.outline.show(x, y)
-      // console.log(x, y);
       return
     }
 
@@ -87,86 +86,76 @@ export default class Board extends Phaser.Group {
     const t1 = this.toIndex(x, y)
     const t2 = this.toIndex(this.outline.position.x, this.outline.position.y)
     const isNeighbors = this.isNeighborTiles(t1, t2)
-    // console.log('isNeighbors', isNeighbors, t1, t2)
+    console.log('isNeighbors', isNeighbors, t1, t2)
     
     if (isNeighbors) {
       this.outline.hide()
       this.processNeighborTiles(t1, t2)
     } else {
       this.outline.show(x, y)
+      return
     }
   }
   
   // Check if two tiles are neigbors vertically or horizontally
   isNeighborTiles(t1, t2): boolean {
-    const dx = Math.abs(t1.row - t2.row);
-    const dy = Math.abs(t1.col - t2.col);
-    return (dx + dy === 1);
+    const deltaRow = Math.abs(t1.row - t2.row);
+    const deltaCol = Math.abs(t1.col - t2.col);
+    return (deltaRow + deltaCol === 1);
   }
 
   processNeighborTiles(t1, t2) {
+    const tweenTime = 300
     const tile1 = this.tiles[t1.row][t1.col]
     const tile2 = this.tiles[t2.row][t2.col]
-    const x1 = tile1.position.x
-    const y1 = tile1.position.y
-    const x2 = tile2.position.x
-    const y2 = tile2.position.y
-    const tweenTime = 200
+    const {x: x1, y: y1} = this.fromIndex(t1.row, t1.col)
+    const {x: x2, y: y2} = this.fromIndex(t2.row, t2.col)
 
     let tween1 = this.game.add.tween(tile1).to({x: x2, y: y2}, tweenTime, 'Sine.easeInOut', true)
     let tween2 = this.game.add.tween(tile2).to({x: x1, y: y1}, tweenTime, 'Sine.easeInOut', true)
     let runTileBack = true
 
-    // Disable input on tiles
-    this.lockTile(t1.row, t1.col, true);
-    this.lockTile(t2.row, t2.col, true);
-
     tween2.onComplete.add(() => {
       // Update tiles position when tween will complete
-      this.reversItemInList(t1, tile1, t2, tile2)
+      this.tiles[t1.row][t1.col] = tile2
+      this.tiles[t2.row][t2.col] = tile1
 
       // Match with first tile
       if (this.findMatch(t1.row, t1.col)) {
         runTileBack = false
       } else {
-        this.lockTile(t1.row, t1.col, false);
       }
 
       // Match with second tile
       if (this.findMatch(t2.row, t2.col)) {
         runTileBack = false
       } else {
-        this.lockTile(t2.row, t2.col, false);
       }
 
       // No matches at all. Move tiles to their previous positions
       if (runTileBack) {
-        console.log('no fucking matches');
         tween1 = this.game.add.tween(tile1).to({x: x1, y: y1}, tweenTime, 'Sine.easeInOut', true)
         tween2 = this.game.add.tween(tile2).to({x: x2, y: y2}, tweenTime, 'Sine.easeInOut', true)
 
         tween1.onComplete.add(() => {
           // Enable input on tiles
-          this.lockTile(t1.row, t1.col, false);
-          this.lockTile(t2.row, t2.col, false);
+        })
+        
+        tween2.onComplete.add(() => {
         })
 
-        this.reversItemInList(t1, tile1, t2, tile2)
+        // Revert
+        this.tiles[t1.row][t1.col] = tile1
+        this.tiles[t2.row][t2.col] = tile2
       }
     })
-  }
-
-  reversItemInList(t1, tile1, t2, tile2) {
-    // Swap processed tiles
-    this.tiles[t2.row][t2.col] = tile1;
-    this.tiles[t1.row][t1.col] = tile2;
   }
 
   findMatch(row: number, col: number) {
     let matchHor = this.findMatchHorizontally(row, col)
     let matchVert = this.findMatchVertically(row, col)
 
-    // console.log('HOR', matchHor, 'VERT', matchVert);
+    console.log(matchHor, matchVert);
 
     if (matchHor.length >= 3) {
       this.markTilesToRemove(matchHor)
@@ -175,10 +164,6 @@ export default class Board extends Phaser.Group {
     if (matchVert.length >= 3) {
       this.markTilesToRemove(matchVert)
     }
-    
-    // return (
-    //   this.findMatchHorizontally(row, col) ||
-    //   this.findMatchVertically(row, col))
 
     return (matchHor.length >= 3 || matchVert.length >= 3)
 
@@ -202,8 +187,6 @@ export default class Board extends Phaser.Group {
       left++
     }
     
-    // Count matches, begin from 0 (current tile). Return true if matches > 2
-    // return (right + left) > 1
     return match
   }
 
@@ -225,8 +208,6 @@ export default class Board extends Phaser.Group {
       up++
     }
 
-    // Count matches, begin from 0 (current tile). Return true if matches > 2    
-    // return (down + up) > 1
     return match
   }
 
@@ -252,17 +233,17 @@ export default class Board extends Phaser.Group {
     }
   }
 
-  lockTile(row, col, lock) {
-    if (this.tiles[row] && this.tiles[row][col]) {
-      console.log(lock, !lock)
-      this.tiles[row][col].inputEnabled = !lock;
-    }
-  }
-
   toIndex(x: number, y: number) {
     return {
       row: Math.floor(y / config.tile.size),
       col: Math.floor(x / config.tile.size)
+    }
+  }
+
+  fromIndex(row: number, col: number) {
+    return {
+      x: Math.floor(col * config.tile.size),
+      y: Math.floor(row * config.tile.size),
     }
   }
 
