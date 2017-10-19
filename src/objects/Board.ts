@@ -4,6 +4,12 @@ import * as Swipe from 'phaser-swipe'
 import Tile from './Tile'
 import Outline from './Outline'
 
+interface TileData {
+  row: number,
+  col: number,
+  typeId?: number
+}
+
 export default class Board extends Phaser.Group {
   rows: number
   cols: number
@@ -39,9 +45,9 @@ export default class Board extends Phaser.Group {
     for (let i = 0; i < this.rows; i++) {
       this.tiles[i] = []
       for (let j = 0; j < this.cols; j++) {
-        const tileId = this.tilesSpec[i][j]
-        if (tileId > 0) {
-          const tile = this.createTile(i, j, tileId)
+        const typeId = this.tilesSpec[i][j]
+        if (typeId > 0) {
+          const tile = this.createTile(i, j, typeId)
           this.tiles[i][j] = tile
           this.addChild(tile)
         }
@@ -49,13 +55,14 @@ export default class Board extends Phaser.Group {
     }
   }
 
-  createTile(row: number, col: number, type: number): Tile {
+  createTile(row: number, col: number, typeId: number): Tile {
     return new Tile({
       game: this.game, 
       x: col * config.tile.size,
-      y: row * config.tile.size, 
+      y: row * config.tile.size,
+      typeId: typeId,
       atlas: 'tiles', 
-      frame: `tile-${type}.png`
+      frame: `tile-${typeId}.png`
     })
   }
 
@@ -66,6 +73,7 @@ export default class Board extends Phaser.Group {
     if (this.outline.isVisible === false) {
       // First tile selected
       this.outline.show(x, y)
+      // console.log(x, y);
       return
     }
 
@@ -79,7 +87,7 @@ export default class Board extends Phaser.Group {
     const t1 = this.toIndex(x, y)
     const t2 = this.toIndex(this.outline.position.x, this.outline.position.y)
     const isNeighbors = this.isNeighborTiles(t1, t2)
-    console.log('isNeighbors', isNeighbors, t1, t2)
+    // console.log('isNeighbors', isNeighbors, t1, t2)
     
     if (isNeighbors) {
       this.outline.hide()
@@ -99,21 +107,52 @@ export default class Board extends Phaser.Group {
   processNeighborTiles(t1, t2) {
     const tile1 = this.tiles[t1.row][t1.col]
     const tile2 = this.tiles[t2.row][t2.col]
+    const x1 = tile1.position.x
+    const y1 = tile1.position.y
+    const x2 = tile2.position.x
+    const y2 = tile2.position.y
     const tweenTime = 200
 
-    const tween1 = this.game.add.tween(tile1).to({
-      x: tile2.position.x,
-      y: tile2.position.y
-    }, tweenTime, Phaser.Easing.Sinusoidal.InOut, true);
+    let tween1 = this.game.add.tween(tile1).to({x: x2, y: y2}, tweenTime, 'Sine.easeInOut', true)
+    let tween2 = this.game.add.tween(tile2).to({x: x1, y: y1}, tweenTime, 'Sine.easeInOut', true)
+    let runTileBack = true
 
-    const tween2 = this.game.add.tween(tile2).to({
-      x: tile1.position.x,
-      y: tile1.position.y
-    }, tweenTime, Phaser.Easing.Sinusoidal.InOut, true);
+    // Disable input on tiles
+    this.lockTile(t1.row, t1.col, true);
+    this.lockTile(t2.row, t2.col, true);
 
     tween2.onComplete.add(() => {
       // Update tiles position when tween will complete
       this.reversItemInList(t1, tile1, t2, tile2)
+
+      // Match with first tile
+      if (this.findMatch(t1.row, t1.col)) {
+        runTileBack = false
+      } else {
+        this.lockTile(t1.row, t1.col, false);
+      }
+
+      // Match with second tile
+      if (this.findMatch(t2.row, t2.col)) {
+        runTileBack = false
+      } else {
+        this.lockTile(t2.row, t2.col, false);
+      }
+
+      // No matches at all. Move tiles to their previous positions
+      if (runTileBack) {
+        console.log('no fucking matches');
+        tween1 = this.game.add.tween(tile1).to({x: x1, y: y1}, tweenTime, 'Sine.easeInOut', true)
+        tween2 = this.game.add.tween(tile2).to({x: x2, y: y2}, tweenTime, 'Sine.easeInOut', true)
+
+        tween1.onComplete.add(() => {
+          // Enable input on tiles
+          this.lockTile(t1.row, t1.col, false);
+          this.lockTile(t2.row, t2.col, false);
+        })
+
+        this.reversItemInList(t1, tile1, t2, tile2)
+      }
     })
   }
 
@@ -123,11 +162,114 @@ export default class Board extends Phaser.Group {
     this.tiles[t1.row][t1.col] = tile2;
   }
 
+  findMatch(row: number, col: number) {
+    let matchHor = this.findMatchHorizontally(row, col)
+    let matchVert = this.findMatchVertically(row, col)
+
+    // console.log('HOR', matchHor, 'VERT', matchVert);
+
+    if (matchHor.length >= 3) {
+      this.markTilesToRemove(matchHor)
+    }
+
+    if (matchVert.length >= 3) {
+      this.markTilesToRemove(matchVert)
+    }
+    
+    // return (
+    //   this.findMatchHorizontally(row, col) ||
+    //   this.findMatchVertically(row, col))
+
+    return (matchHor.length >= 3 || matchVert.length >= 3)
+
+  }
+
+  findMatchHorizontally(row: number, col: number) {
+    const typeId = this.tiles[row][col].typeId
+    let left = 0
+    let right = 0
+    let match = [{row, col}]
+
+    // Find similar tiles to the right from current tile
+    while (typeId === this.getTileType(row, col + right + 1)) {
+      match.push({row, col: col + right + 1})
+      right++
+    }
+    
+    // Find similar tiles to the left from current tile
+    while (typeId === this.getTileType(row, col - left - 1)) {
+      match.push({row, col: col - left - 1})
+      left++
+    }
+    
+    // Count matches, begin from 0 (current tile). Return true if matches > 2
+    // return (right + left) > 1
+    return match
+  }
+
+  findMatchVertically(row: number, col: number) {
+    const typeId = this.tiles[row][col].typeId
+    let up = 0
+    let down = 0
+    let match = [{row, col}]    
+    
+    // Find similar tiles down from current tile
+    while (typeId === this.getTileType(row + down + 1, col)) {
+      match.push({row: row + down + 1, col})
+      down++
+    }
+
+    // Find similar tiles up from current tile
+    while (typeId === this.getTileType(row - up - 1, col)) {
+      match.push({row: row - up - 1, col})
+      up++
+    }
+
+    // Count matches, begin from 0 (current tile). Return true if matches > 2    
+    // return (down + up) > 1
+    return match
+  }
+
+  getTileType(row: number, col: number): number {
+    if (row < 0 || row > this.rows - 1 || col < 0 || col > this.cols - 1 || !this.tiles[row][col]) {
+      return -1;
+    } else {
+      return this.tiles[row][col].typeId;
+    }
+  }
+
+  markTilesToRemove(matchLine: Array<TileData>) {
+    matchLine.forEach(t => {
+      // this.tiles[t.row][t.col].markedToRemove = true
+      this.removeTile(t.row, t.col)
+    })
+  }
+
+  removeTile(row, col) {
+    if (this.tiles[row][col]) {
+      this.tiles[row][col].destroy()
+      this.tiles[row][col] = null
+    }
+  }
+
+  lockTile(row, col, lock) {
+    if (this.tiles[row] && this.tiles[row][col]) {
+      console.log(lock, !lock)
+      this.tiles[row][col].inputEnabled = !lock;
+    }
+  }
+
   toIndex(x: number, y: number) {
     return {
       row: Math.floor(y / config.tile.size),
       col: Math.floor(x / config.tile.size)
     }
+  }
+
+  addTween(tile, x, y, time, easeType: string = 'Linear') {
+    let tween = this.game.add.tween(tile).to({
+      x, y
+    }, time, easeType, true)
   }
   
   update() {
