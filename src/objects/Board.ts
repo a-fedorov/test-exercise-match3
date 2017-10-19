@@ -1,6 +1,8 @@
 import 'phaser'
 import * as Swipe from 'phaser-swipe'
+
 import Tile from './Tile'
+import Outline from './Outline'
 
 export default class Board extends Phaser.Group {
   rows: number
@@ -9,7 +11,7 @@ export default class Board extends Phaser.Group {
   tilesSpec: Array<Array<number>>
   tiles: Array<Tile>
 
-  outline: Phaser.Sprite    
+  outline: Outline
   isTileSelected: boolean
   
   swipe: Swipe
@@ -30,7 +32,7 @@ export default class Board extends Phaser.Group {
     this.fill()
     this.swipe = new Swipe(this.game)
     this.onChildInputDown.add(this.onTileSelect, this)
-    this.createOutline()
+    this.outline = new Outline(this.game, this)
   }
   
   fill() {
@@ -47,7 +49,7 @@ export default class Board extends Phaser.Group {
   createTile(row: number, col: number, type: number): Tile {
     return new Tile({
       game: this.game, 
-      x: col * config.tile.size, 
+      x: col * config.tile.size,
       y: row * config.tile.size, 
       atlas: 'tiles', 
       frame: `tile-${type}.png`
@@ -59,15 +61,15 @@ export default class Board extends Phaser.Group {
     let y = tile.y
     let {row, col} = this.toIndex(x, y)
 
-    if (this.isTileSelected === false) {
+    if (this.outline.isVisible === false) {
       // First tile selected
       console.log('First tile selected')
-      this.showOutline(x, y)
+      this.outline.show(x, y)
     } else {
       if (x === this.outline.position.x && y === this.outline.position.y) {
         // Same tile selected
         console.log('Same tile selected')
-        this.hideOutline()
+        this.outline.hide()
       } else {
         // Another tile selected
         console.log('Another tile selected')
@@ -78,9 +80,10 @@ export default class Board extends Phaser.Group {
         console.log('isNeighbors', isNeighbors, tileData1, tileData2)
         
         if (isNeighbors) {
-          this.hideOutline()
+          this.outline.hide()
+          this.processNeighborTiles()
         } else {
-          this.showOutline(x, y)
+          this.outline.show(x, y)
         }
       }
     }
@@ -92,33 +95,9 @@ export default class Board extends Phaser.Group {
     const dy = Math.abs(tileData1.col - tileData2.col);
     return (dx + dy === 1);
   }
-  
-  createOutline() {
-    this.outline = this.game.add.sprite(0, 0, 'tiles', 'outline.png');
-    this.outline.scale.set(1.35)
-    this.outline.tint = 0xffaf00;
-    this.outline.alpha = 0;
-    this.addChild(this.outline)
-  }
-  
-  showOutline(x: number, y: number) {
-    if (!this.outline) {
-      return
-    }
-    
-    this.isTileSelected = true;    
-    this.outline.position.set(x, y)
-    this.outline.alpha = 1
-    // this.game.add.tween(this.outline).to({alpha: 1}, 500, Phaser.Easing.Linear.None, true)
-  }
-
-  hideOutline() {
-    this.isTileSelected = false;
-    this.outline.alpha = 0
-  }
 
   processNeighborTiles() {
-    
+    console.log(this.children);
   }
 
   toIndex(x: number, y: number) {
