@@ -163,11 +163,11 @@ export default class Board extends Phaser.Group {
     
     // process founded line
     if (matchHor.length >= 3) {
-      this.markTilesToRemove(matchHor, false)
+      this.removeTilesAll(matchHor, false)
     }
 
     if (matchVert.length >= 3) {
-      this.markTilesToRemove(matchVert, true)
+      this.removeTilesAll(matchVert, true)
     }
 
     return (matchHor.length >= 3 || matchVert.length >= 3)
@@ -175,6 +175,10 @@ export default class Board extends Phaser.Group {
   }
 
   findMatchHorizontally(row: number, col: number) {
+    if (this.tiles[row][col] === null) {
+      return
+    }
+
     const typeId = this.tiles[row][col].typeId
     let left = 0
     let right = 0
@@ -196,6 +200,10 @@ export default class Board extends Phaser.Group {
   }
 
   findMatchVertically(row: number, col: number) {
+    if (this.tiles[row][col] === null) {
+      return
+    }
+
     const typeId = this.tiles[row][col].typeId
     let up = 0
     let down = 0
@@ -224,7 +232,7 @@ export default class Board extends Phaser.Group {
     }
   }
 
-  markTilesToRemove(matchedTiles: Array<TileData>, isVerticalMatch: boolean) {
+  removeTilesAll(matchedTiles: Array<TileData>, isVerticalMatch: boolean) {
     matchedTiles.forEach(t => {
       // this.tiles[t.row][t.col].markedToRemove = true
       this.removeTile(t.row, t.col)
@@ -235,53 +243,65 @@ export default class Board extends Phaser.Group {
 
   removeTile(row: number, col: number) {
     if (this.tiles[row][col]) {
-      this.tiles[row][col].destroy()
+      // this.tiles[row][col].destroy()
+      this.removeChild(this.tiles[row][col])
       this.tiles[row][col] = null
     }
   }
 
   fallDown(/* matchedTiles?: Array<TileData>, isVerticalMatch?: boolean */) {
+    let fallTween
+
     // Find gaps on the board
-    for (let row = 1; row < this.rows; row++) {
+    for (let row = 0; row < this.rows; row++) {
       for (let col = 0; col < this.cols; col++) {
         const tile = this.tiles[row][col]
         
         if (tile === null) {
           let rowPrev = row - 1
           
-          if (this.tiles[rowPrev][col]) {
-            this.fallTileDown(this.tiles[rowPrev][col], row, col)
+          if (rowPrev >= 0 && this.tiles[rowPrev][col]) {
+            fallTween = this.fallTileDown(this.tiles[rowPrev][col], row, col)
           }
         }
       }
+    }
+
+    if (fallTween) {
+      fallTween.onComplete.add(() => this.fallDown())
     }
   }
   
   fallTileDown(tile: Tile, row: number, col: number) {  
     const tween = this.game.add.tween(this.tiles[row - 1][col])
-      .to(this.fromIndex(row, col), 300, 'Linear', true)
+      .to(this.fromIndex(row, col), config.time.tween.fall, 'Linear', true)
     
     // Swap tiles
     const tempTile = this.tiles[row - 1][col]
     this.tiles[row - 1][col] = this.tiles[row][col]
     this.tiles[row][col] = tempTile
+
+
+    tween.onComplete.add(() => {
+      // this.addNewTiles(col)
+    })
+
     
     // Recursively fall down all tiles above gaps
-    this.fallDown()
+    // this.fallDown()
+
+    return tween
   }
 
-  // addNewTiles() {
-    
-  // }
+  addNewTiles(col: number) {
+    console.log('add');
+    // Find gaps on the board
+    const tile = this.createTile(0, col, this.getRandomTileId())
+    this.tiles[0][col] = tile
+    this.addChild(tile)
 
-  swapTiles(row1, col1, row2, col2) {
-    // const tempTile = this.tiles[row1][col1]
-    // this.tiles[row1][col1] = this.tiles[row2][col2]
-    // this.tiles[row2][col2] = tempTile
-
-    // const fallTime = config.time.tween.fall
-    // const targetPos = this.fromIndex(row2, col2)
-    // const tween = this.game.add.tween(this.tiles[row1][col1]).to(targetPos, fallTime, 'Linear', true)
+    // 
+    this.fallDown()
   }
 
   checkBounds(row, col) {
@@ -330,7 +350,7 @@ export default class Board extends Phaser.Group {
   }
 
 
-  // getTileId(): number {
-  //   return this.game.rnd.integerInRange(1, this.tileTypes)
-  // }
+  getRandomTileId(): number {
+    return this.game.rnd.integerInRange(1, this.tileTypes)
+  }
 }
