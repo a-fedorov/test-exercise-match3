@@ -174,9 +174,9 @@ export default class Board extends Phaser.Group {
 
   }
 
-  findMatchHorizontally(row: number, col: number) {
+  findMatchHorizontally(row: number, col: number): Array<TileData> {
     if (this.tiles[row][col] === null) {
-      return
+      return []
     }
 
     const typeId = this.tiles[row][col].typeId
@@ -199,9 +199,9 @@ export default class Board extends Phaser.Group {
     return match
   }
 
-  findMatchVertically(row: number, col: number) {
+  findMatchVertically(row: number, col: number): Array<TileData> {
     if (this.tiles[row][col] === null) {
-      return
+      return []
     }
 
     const typeId = this.tiles[row][col].typeId
