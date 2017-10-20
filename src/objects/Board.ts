@@ -6,8 +6,7 @@ import Outline from './Outline'
 
 interface TileData {
   row: number,
-  col: number,
-  typeId?: number
+  col: number
 }
 
 export default class Board extends Phaser.Group {
@@ -18,7 +17,7 @@ export default class Board extends Phaser.Group {
   tiles: Array<Array<Tile>>
 
   outline: Outline
-  isTileSelected: boolean
+  isMoving: boolean
   
   swipe: Swipe
 
@@ -30,11 +29,13 @@ export default class Board extends Phaser.Group {
     this.tilesSpec = config.board.defaultTiles
     this.tiles = []
 
-    this.isTileSelected = false
+    this.isMoving = false
     this.init()
   }
   
   init() {
+    (window as any).board = this;
+
     this.fill()
     // this.swipe = new Swipe(this.game)
     this.onChildInputDown.add(this.onTileSelect, this)
@@ -70,6 +71,11 @@ export default class Board extends Phaser.Group {
     let x = tile.x
     let y = tile.y
 
+    // Wait till all tiles will be on their places
+    if (this.isMoving) {
+      return
+    }
+
     if (this.outline.isVisible === false) {
       // First tile selected
       this.outline.show(x, y)
@@ -104,6 +110,7 @@ export default class Board extends Phaser.Group {
   }
 
   processNeighborTiles(t1, t2) {
+    console.log('processNeighborTiles');
     const tweenTime = 300
     const tile1 = this.tiles[t1.row][t1.col]
     const tile2 = this.tiles[t2.row][t2.col]
@@ -114,6 +121,8 @@ export default class Board extends Phaser.Group {
     let tween2 = this.game.add.tween(tile2).to({x: x1, y: y1}, tweenTime, 'Sine.easeInOut', true)
     let runTileBack = true
 
+    this.isMoving = true
+
     tween2.onComplete.add(() => {
       // Update tiles position when tween will complete
       this.tiles[t1.row][t1.col] = tile2
@@ -122,28 +131,27 @@ export default class Board extends Phaser.Group {
       // Match with first tile
       if (this.findMatch(t1.row, t1.col)) {
         runTileBack = false
-      } else {
-      }
-
+        this.isMoving = false
+      } 
+      
       // Match with second tile
       if (this.findMatch(t2.row, t2.col)) {
         runTileBack = false
-      } else {
+        this.isMoving = false
       }
 
       // No matches at all. Move tiles to their previous positions
       if (runTileBack) {
         tween1 = this.game.add.tween(tile1).to({x: x1, y: y1}, tweenTime, 'Sine.easeInOut', true)
         tween2 = this.game.add.tween(tile2).to({x: x2, y: y2}, tweenTime, 'Sine.easeInOut', true)
+        this.isMoving = true
 
         tween1.onComplete.add(() => {
           // Enable input on tiles
+          this.isMoving = false
         })
         
-        tween2.onComplete.add(() => {
-        })
-
-        // Revert
+        // Reverse swap 
         this.tiles[t1.row][t1.col] = tile1
         this.tiles[t2.row][t2.col] = tile2
       }
