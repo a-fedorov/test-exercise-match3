@@ -110,15 +110,14 @@ export default class Board extends Phaser.Group {
   }
 
   processNeighborTiles(t1, t2) {
-    console.log('processNeighborTiles');
-    const tweenTime = 300
+    const swapTime = config.time.tween.swap
     const tile1 = this.tiles[t1.row][t1.col]
     const tile2 = this.tiles[t2.row][t2.col]
     const {x: x1, y: y1} = this.fromIndex(t1.row, t1.col)
     const {x: x2, y: y2} = this.fromIndex(t2.row, t2.col)
 
-    let tween1 = this.game.add.tween(tile1).to({x: x2, y: y2}, tweenTime, 'Sine.easeInOut', true)
-    let tween2 = this.game.add.tween(tile2).to({x: x1, y: y1}, tweenTime, 'Sine.easeInOut', true)
+    let tween1 = this.game.add.tween(tile1).to({x: x2, y: y2}, swapTime, 'Sine.easeInOut', true)
+    let tween2 = this.game.add.tween(tile2).to({x: x1, y: y1}, swapTime, 'Sine.easeInOut', true)
     let runTileBack = true
 
     this.isMoving = true
@@ -142,8 +141,8 @@ export default class Board extends Phaser.Group {
 
       // No matches at all. Move tiles to their previous positions
       if (runTileBack) {
-        tween1 = this.game.add.tween(tile1).to({x: x1, y: y1}, tweenTime, 'Sine.easeInOut', true)
-        tween2 = this.game.add.tween(tile2).to({x: x2, y: y2}, tweenTime, 'Sine.easeInOut', true)
+        tween1 = this.game.add.tween(tile1).to({x: x1, y: y1}, swapTime, 'Sine.easeInOut', true)
+        tween2 = this.game.add.tween(tile2).to({x: x2, y: y2}, swapTime, 'Sine.easeInOut', true)
         this.isMoving = true
 
         tween1.onComplete.add(() => {
@@ -161,13 +160,14 @@ export default class Board extends Phaser.Group {
   findMatch(row: number, col: number) {
     let matchHor = this.findMatchHorizontally(row, col)
     let matchVert = this.findMatchVertically(row, col)
-
+    
+    // process founded line
     if (matchHor.length >= 3) {
-      this.markTilesToRemove(matchHor)
+      this.markTilesToRemove(matchHor, false)
     }
 
     if (matchVert.length >= 3) {
-      this.markTilesToRemove(matchVert)
+      this.markTilesToRemove(matchVert, true)
     }
 
     return (matchHor.length >= 3 || matchVert.length >= 3)
@@ -224,18 +224,71 @@ export default class Board extends Phaser.Group {
     }
   }
 
-  markTilesToRemove(matchLine: Array<TileData>) {
-    matchLine.forEach(t => {
+  markTilesToRemove(matchedTiles: Array<TileData>, isVerticalMatch: boolean) {
+    matchedTiles.forEach(t => {
       // this.tiles[t.row][t.col].markedToRemove = true
       this.removeTile(t.row, t.col)
     })
+
+    this.fallDown(/* matchedTiles, isVerticalMatch */)
   }
 
-  removeTile(row, col) {
+  removeTile(row: number, col: number) {
     if (this.tiles[row][col]) {
       this.tiles[row][col].destroy()
       this.tiles[row][col] = null
     }
+  }
+
+  fallDown(/* matchedTiles?: Array<TileData>, isVerticalMatch?: boolean */) {
+    // Find gaps on the board
+    for (let row = 1; row < this.rows; row++) {
+      for (let col = 0; col < this.cols; col++) {
+        const tile = this.tiles[row][col]
+        
+        if (tile === null) {
+          let rowPrev = row - 1
+          
+          if (this.tiles[rowPrev][col]) {
+            this.fallTileDown(this.tiles[rowPrev][col], row, col)
+          }
+        }
+      }
+    }
+  }
+  
+  fallTileDown(tile: Tile, row: number, col: number) {  
+    const tween = this.game.add.tween(this.tiles[row - 1][col])
+      .to(this.fromIndex(row, col), 300, 'Linear', true)
+    
+    // Swap tiles
+    const tempTile = this.tiles[row - 1][col]
+    this.tiles[row - 1][col] = this.tiles[row][col]
+    this.tiles[row][col] = tempTile
+    
+    // Recursively fall down all tiles above gaps
+    this.fallDown()
+  }
+
+  // addNewTiles() {
+    
+  // }
+
+  swapTiles(row1, col1, row2, col2) {
+    // const tempTile = this.tiles[row1][col1]
+    // this.tiles[row1][col1] = this.tiles[row2][col2]
+    // this.tiles[row2][col2] = tempTile
+
+    // const fallTime = config.time.tween.fall
+    // const targetPos = this.fromIndex(row2, col2)
+    // const tween = this.game.add.tween(this.tiles[row1][col1]).to(targetPos, fallTime, 'Linear', true)
+  }
+
+  checkBounds(row, col) {
+    if (row < 0 || row > this.rows - 1 || col < 0 || col > this.cols - 1) {
+      return false
+    }
+    return true
   }
 
   toIndex(x: number, y: number) {

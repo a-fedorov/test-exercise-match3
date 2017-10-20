@@ -21,5 +21,12 @@
 
   "tile": {
     "size": 64
+  },
+
+  "time": {
+    "tween": {
+      "swap": 300,
+      "fall": 200
+    }
   }
 }
