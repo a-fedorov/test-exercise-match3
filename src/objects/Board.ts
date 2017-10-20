@@ -232,76 +232,56 @@ export default class Board extends Phaser.Group {
     }
   }
 
-  removeTilesAll(matchedTiles: Array<TileData>, isVerticalMatch: boolean) {
-    matchedTiles.forEach(t => {
-      // this.tiles[t.row][t.col].markedToRemove = true
-      this.removeTile(t.row, t.col)
-    })
-
-    this.fallDown(/* matchedTiles, isVerticalMatch */)
+  removeTilesAll(matchedTiles, isVerticalMatch: boolean) {
+    matchedTiles.forEach(t => this.removeTile(t.row, t.col))
+    // this.fallTilesDown(matchedTiles)
+    this.fallDown()
   }
 
   removeTile(row: number, col: number) {
     if (this.tiles[row][col]) {
-      // this.tiles[row][col].destroy()
       this.removeChild(this.tiles[row][col])
       this.tiles[row][col] = null
     }
   }
 
-  fallDown(/* matchedTiles?: Array<TileData>, isVerticalMatch?: boolean */) {
-    let fallTween
-
+  fallDown() {
     // Find gaps on the board
-    for (let row = 0; row < this.rows; row++) {
+    for (let row = 0; row < this.rows - 1; row++) {
       for (let col = 0; col < this.cols; col++) {
         const tile = this.tiles[row][col]
-        
-        if (tile === null) {
-          let rowPrev = row - 1
-          
-          if (rowPrev >= 0 && this.tiles[rowPrev][col]) {
-            fallTween = this.fallTileDown(this.tiles[rowPrev][col], row, col)
+
+        // Find first tile above the gap 
+        if (tile && this.tiles[row + 1][col] === null) {
+
+          // Process all tiles above the gap
+          for (let curRow = row; curRow >= 0; curRow--) {
+            if (this.tiles[curRow][col]) {
+              this.moveTile(curRow, col, curRow + 1, col)
+            }
           }
         }
       }
     }
-
-    if (fallTween) {
-      fallTween.onComplete.add(() => this.fallDown())
-    }
   }
   
-  fallTileDown(tile: Tile, row: number, col: number) {  
-    const tween = this.game.add.tween(this.tiles[row - 1][col])
-      .to(this.fromIndex(row, col), config.time.tween.fall, 'Linear', true)
-    
-    // Swap tiles
-    const tempTile = this.tiles[row - 1][col]
-    this.tiles[row - 1][col] = this.tiles[row][col]
-    this.tiles[row][col] = tempTile
+  addNewTiles(col: number) {
 
-
-    tween.onComplete.add(() => {
-      // this.addNewTiles(col)
-    })
-
-    
-    // Recursively fall down all tiles above gaps
-    // this.fallDown()
-
-    return tween
   }
 
-  addNewTiles(col: number) {
-    console.log('add');
-    // Find gaps on the board
-    const tile = this.createTile(0, col, this.getRandomTileId())
-    this.tiles[0][col] = tile
-    this.addChild(tile)
+  swapTiles(row1, col1, row2, col2) {
+    const tempTile = this.tiles[row1][col1] 
+    this.tiles[row1][col1] = this.tiles[row2][col2] 
+    this.tiles[row2][col2] = tempTile
+  }
 
-    // 
-    this.fallDown()
+  moveTile(rowFrom, colFrom, rowTo, colTo) {
+    const tile = this.tiles[rowFrom][colFrom]
+    const tween = this.game.add.tween(tile)
+      .to(this.fromIndex(rowTo, colTo), config.time.tween.fall, 'Linear', true)
+    
+    this.swapTiles(rowFrom, colFrom, rowTo, colTo)
+    return tween
   }
 
   checkBounds(row, col) {
