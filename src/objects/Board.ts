@@ -48,12 +48,19 @@ export default class Board extends Phaser.Group {
       for (let j = 0; j < this.cols; j++) {
         const typeId = this.tilesSpec[i][j]
         if (typeId > 0) {
-          const tile = this.createTile(i, j, typeId)
-          this.tiles[i][j] = tile
-          this.addChild(tile)
+          this.addTile(i, j, typeId)
+          // const tile = this.createTile(i, j, typeId)
+          // this.tiles[i][j] = tile
+          // this.addChild(tile)
         }
       }
     }
+  }
+
+  addTile(row: number, col: number, typeId: number) {
+    const tile = this.createTile(row, col, typeId)
+    this.tiles[row][col] = tile
+    this.addChild(tile)
   }
 
   createTile(row: number, col: number, typeId: number): Tile {
@@ -236,6 +243,7 @@ export default class Board extends Phaser.Group {
     matchedTiles.forEach(t => this.removeTile(t.row, t.col))
     // this.fallTilesDown(matchedTiles)
     this.fallDown()
+    this.addNewTiles()
   }
 
   removeTile(row: number, col: number) {
@@ -246,6 +254,8 @@ export default class Board extends Phaser.Group {
   }
 
   fallDown() {
+    let isTileFallen = false
+
     // Find gaps on the board
     for (let row = 0; row < this.rows - 1; row++) {
       for (let col = 0; col < this.cols; col++) {
@@ -257,16 +267,43 @@ export default class Board extends Phaser.Group {
           // Process all tiles above the gap
           for (let curRow = row; curRow >= 0; curRow--) {
             if (this.tiles[curRow][col]) {
+              isTileFallen = true
               this.moveTile(curRow, col, curRow + 1, col)
             }
           }
         }
       }
     }
+
+    if (isTileFallen) {
+      this.addNewTiles()
+    }
   }
   
-  addNewTiles(col: number) {
+  addNewTiles() {
+    let isTileAdded = false
 
+    for (let row = this.rows - 1; row >= 0; row--) {
+      for (let col = 0; col < this.cols; col++) {
+        const tile = this.tiles[row][col]
+        let startRow = 0
+        
+        // Special case for fisrt and last columns on the board
+        if (col === 0 || col === this.cols - 1) {
+          startRow = 1
+        }
+
+        // Check if there is place for adding a new tile
+        if (tile === null && !this.tiles[startRow][col]) {
+          isTileAdded = true
+          this.addTile(startRow, col, this.getRandomTileId())
+        }
+      }
+    }
+
+    if (isTileAdded) {
+      this.fallDown()
+    }
   }
 
   swapTiles(row1, col1, row2, col2) {
