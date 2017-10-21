@@ -25,8 +25,9 @@
 
   "time": {
     "tween": {
+      "remove": 150,
       "swap": 300,
-      "fall": 200
+      "fall": 250
     }
   }
 }

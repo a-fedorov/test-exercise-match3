@@ -246,26 +246,24 @@ export default class Board extends Phaser.Group {
     matchedTiles.forEach(t => this.removeTile(t.row, t.col))
 
     setTimeout(() => {
-      const fallDuration = this.fallDown()
-
-      // Delay board refilling until all existing tiles have dropped down
-      setTimeout(() => {
-        this.addNewTiles()
-        // this.checkCascade()
-      }, fallDuration * config.time.tween.fall / 2);
-    }, 20);
+      this.fallDown()
+      this.addNewTiles()
+    }, config.time.tween.remove + 50);
   }
 
   removeTile(row: number, col: number) {
     if (this.tiles[row][col]) {
-      this.removeChild(this.tiles[row][col])
-      this.tiles[row][col] = null
+      const tween = this.game.add.tween(this.tiles[row][col])
+        .to({alpha: 0}, config.time.tween.remove, 'Cubic', true)
+
+      tween.onComplete.add(() => {
+        this.removeChild(this.tiles[row][col])
+        this.tiles[row][col] = null
+      })
     }
   }
 
   fallDown() {
-    let gapsInColMax = 0
-
     // Find gaps on the board
     for (let col = 0; col < this.cols; col++) {
       let gapsInCol = 0
@@ -274,16 +272,18 @@ export default class Board extends Phaser.Group {
         if (tile === null) {
           gapsInCol++
         } else if (tile && gapsInCol > 0) {
-          this.moveTile(row, col, row + gapsInCol, col, gapsInCol)
+          const pos = this.fromIndex(row + gapsInCol, col)
+          const tween = this.addTween(tile, pos.x, pos.y, gapsInCol)
+          this.tiles[row + gapsInCol][col] = tile
+          this.tiles[row][col] = null
         }
       }
-      gapsInColMax = Math.max(gapsInCol, gapsInColMax)
     }
-
-    return gapsInColMax
   }
   
   addNewTiles() {
+    let gapsInColMax = 0
+
     for (let col = 0; col < this.cols; col++) {
       let gapsInCol = 0
       for (let row = this.rows - 1; row >= 0; row--) {
@@ -295,16 +295,27 @@ export default class Board extends Phaser.Group {
           const pos = this.fromIndex(row, col)
           this.tiles[row][col] = newTile
           this.addChild(newTile)
-          this.addTween(newTile, pos.x, pos.y, gapsInCol * 2)
+          this.addTween(newTile, pos.x, pos.y, row + gapsInCol)
         }
       }
+
+      gapsInColMax = Math.max(gapsInCol, gapsInColMax)
+    }
+
+    if (gapsInColMax > 0) {
+      setTimeout(() => { this.checkCascade() }, gapsInColMax * config.time.tween.fall);
+    } else {
+      console.log('object');
     }
   }
+
 
   checkCascade() {
     for (let row = 0; row < this.rows; row++) {
       for (let col = 0; col < this.cols; col++) {
-        // this.findMatch(row, col)
+        if (this.tiles[row][col]) {
+          this.findMatch(row, col)
+        }
       }
     }
   }
@@ -356,7 +367,11 @@ export default class Board extends Phaser.Group {
   }
   
   update() {
-    
+    // if (this.game.tweens.getAll().length)
+    // console.log(this.game.tweens.getAll().length);
+    // if (this.game.tweens.getAll().length === 0) {
+    //   this.checkCascade()
+    // }
   }
 
 
