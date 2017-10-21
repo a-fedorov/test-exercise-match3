@@ -10,6 +10,7 @@ interface TileData {
 }
 
 export default class Board extends Phaser.Group {
+  background: Phaser.Sprite
   rows: number
   cols: number
   tileTypes: number
@@ -40,6 +41,9 @@ export default class Board extends Phaser.Group {
     // this.swipe = new Swipe(this.game)
     this.onChildInputDown.add(this.onTileSelect, this)
     this.outline = new Outline(this.game, this)
+
+    this.background = this.game.add.sprite(0, 0, 'tiles', 'board-bg.png')
+    this.background.alignIn(this.game.world.bounds, Phaser.CENTER)
   }
   
   fill() {
