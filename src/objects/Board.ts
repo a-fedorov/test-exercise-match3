@@ -245,10 +245,10 @@ export default class Board extends Phaser.Group {
   removeTilesAll(matchedTiles, isVerticalMatch: boolean) {
     matchedTiles.forEach(t => this.removeTile(t.row, t.col))
 
-    setTimeout(() => {
+    this.game.time.events.add(config.time.tween.remove + 50, () => {
       this.fallDown()
       this.addNewTiles()
-    }, config.time.tween.remove + 50);
+    })
   }
 
   removeTile(row: number, col: number) {
@@ -303,9 +303,9 @@ export default class Board extends Phaser.Group {
     }
 
     if (gapsInColMax > 0) {
-      setTimeout(() => { this.checkCascade() }, gapsInColMax * config.time.tween.fall);
-    } else {
-      console.log('object');
+      this.game.time.events.add(gapsInColMax * config.time.tween.fall, () => { 
+        this.checkCascade() 
+      })
     }
   }
 
