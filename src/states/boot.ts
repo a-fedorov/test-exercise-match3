@@ -5,6 +5,8 @@ export default class extends Phaser.State {
     this.stage.backgroundColor = '#47C8F5';
 
     this.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
+    this.scale.pageAlignHorizontally = true
+    this.scale.pageAlignVertically = true
   }
 
   preload() {
