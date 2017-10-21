@@ -1,8 +1,16 @@
 {"frames": {
 
+"board-bg.png":
+{
+	"frame": {"x":2,"y":2,"w":482,"h":482},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":482,"h":482},
+	"sourceSize": {"w":482,"h":482}
+},
 "outline.png":
 {
-	"frame": {"x":2,"y":2,"w":49,"h":49},
+	"frame": {"x":486,"y":2,"w":49,"h":49},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":49,"h":49},
@@ -10,7 +18,7 @@
 },
 "tile-1.png":
 {
-	"frame": {"x":53,"y":2,"w":256,"h":256},
+	"frame": {"x":537,"y":2,"w":256,"h":256},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":256,"h":256},
@@ -18,7 +26,7 @@
 },
 "tile-2.png":
 {
-	"frame": {"x":311,"y":2,"w":256,"h":256},
+	"frame": {"x":2,"y":486,"w":256,"h":256},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":256,"h":256},
@@ -26,7 +34,7 @@
 },
 "tile-3.png":
 {
-	"frame": {"x":569,"y":2,"w":256,"h":256},
+	"frame": {"x":260,"y":486,"w":256,"h":256},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":256,"h":256},
@@ -34,7 +42,7 @@
 },
 "tile-4.png":
 {
-	"frame": {"x":827,"y":2,"w":256,"h":256},
+	"frame": {"x":518,"y":486,"w":256,"h":256},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":256,"h":256},
@@ -42,7 +50,7 @@
 },
 "tile-5.png":
 {
-	"frame": {"x":1085,"y":2,"w":256,"h":256},
+	"frame": {"x":2,"y":744,"w":256,"h":256},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":256,"h":256},
@@ -50,7 +58,7 @@
 },
 "tile-6.png":
 {
-	"frame": {"x":1343,"y":2,"w":256,"h":256},
+	"frame": {"x":260,"y":744,"w":256,"h":256},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":256,"h":256},
@@ -58,27 +66,19 @@
 },
 "tile-7.png":
 {
-	"frame": {"x":1601,"y":2,"w":256,"h":256},
+	"frame": {"x":518,"y":744,"w":256,"h":256},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":256,"h":256},
 	"sourceSize": {"w":256,"h":256}
-},
-"tile-outline.png":
-{
-	"frame": {"x":1859,"y":2,"w":40,"h":39},
-	"rotated": false,
-	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":40,"h":39},
-	"sourceSize": {"w":40,"h":39}
 }},
 "meta": {
 	"app": "http://www.texturepacker.com",
 	"version": "1.0",
 	"image": "tiles.png",
 	"format": "RGBA8888",
-	"size": {"w":1901,"h":260},
+	"size": {"w":795,"h":1002},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:af93261c23f816a8b2c0535382242162$"
+	"smartupdate": "$TexturePacker:SmartUpdate:f26ab6add0a296cff3324b218212aa3a$"
 }
 }
