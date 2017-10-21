@@ -38,12 +38,20 @@ export default class Board extends Phaser.Group {
     (window as any).board = this;
 
     this.fill()
+
     // this.swipe = new Swipe(this.game)
     this.onChildInputDown.add(this.onTileSelect, this)
     this.outline = new Outline(this.game, this)
 
     this.background = this.game.add.sprite(0, 0, 'tiles', 'board-bg.png')
     this.background.alignIn(this.game.world.bounds, Phaser.CENTER)
+
+    // Add crop mask
+    const mask = this.game.add.graphics(0, 0)
+    mask.beginFill()
+    mask.drawRect(this.background.x, this.background.y, this.background.width, this.background.height)
+    mask.endFill()
+    this.mask = mask
   }
   
   fill() {
