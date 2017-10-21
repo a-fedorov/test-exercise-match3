@@ -45,7 +45,7 @@ export default class Board extends Phaser.Group {
 
     this.background = this.game.add.sprite(0, 0, 'tiles', 'board-bg.png')
     this.background.alignIn(this.game.world.bounds, Phaser.CENTER)
-
+    
     // Add crop mask
     const mask = this.game.add.graphics(0, 0)
     mask.beginFill()
@@ -276,6 +276,8 @@ export default class Board extends Phaser.Group {
   }
 
   fallDown() {
+    this.isMoving = true
+
     // Find gaps on the board
     for (let col = 0; col < this.cols; col++) {
       let gapsInCol = 0
@@ -330,6 +332,8 @@ export default class Board extends Phaser.Group {
         }
       }
     }
+
+    this.isMoving = false
   }
 
   swapTiles(row1, col1, row2, col2) {

@@ -4,9 +4,10 @@ export default class extends Phaser.State {
   init() {
     this.stage.backgroundColor = '#47C8F5';
 
-    this.scale.scaleMode = Phaser.ScaleManager.USER_SCALE;
     this.scale.pageAlignHorizontally = true
     this.scale.pageAlignVertically = true
+    this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+    this.scale.setMinMax(config.game.minWidth, config.game.minHeight, config.game.width, config.game.height)
   }
 
   preload() {
