@@ -49,9 +49,8 @@ export default class Board extends Phaser.Group {
         const typeId = this.tilesSpec[i][j]
         if (typeId > 0) {
           this.addTile(i, j, typeId)
-          // const tile = this.createTile(i, j, typeId)
-          // this.tiles[i][j] = tile
-          // this.addChild(tile)
+        } else if (typeId === -1) {
+          // this.addBlockedTile(i, j)
         }
       }
     }
@@ -61,6 +60,10 @@ export default class Board extends Phaser.Group {
     const tile = this.createTile(row, col, typeId)
     this.tiles[row][col] = tile
     this.addChild(tile)
+  }
+
+  addBlockedTile(row: number, col: number) {
+    this.tiles[row][col] = undefined
   }
 
   createTile(row: number, col: number, typeId: number): Tile {
@@ -241,9 +244,16 @@ export default class Board extends Phaser.Group {
 
   removeTilesAll(matchedTiles, isVerticalMatch: boolean) {
     matchedTiles.forEach(t => this.removeTile(t.row, t.col))
-    // this.fallTilesDown(matchedTiles)
-    this.fallDown()
-    this.addNewTiles()
+
+    setTimeout(() => {
+      const fallDuration = this.fallDown()
+
+      // Delay board refilling until all existing tiles have dropped down
+      setTimeout(() => {
+        this.addNewTiles()
+        // this.checkCascade()
+      }, fallDuration * config.time.tween.fall / 2);
+    }, 20);
   }
 
   removeTile(row: number, col: number) {
@@ -254,55 +264,48 @@ export default class Board extends Phaser.Group {
   }
 
   fallDown() {
-    let isTileFallen = false
+    let gapsInColMax = 0
 
     // Find gaps on the board
-    for (let row = 0; row < this.rows - 1; row++) {
-      for (let col = 0; col < this.cols; col++) {
+    for (let col = 0; col < this.cols; col++) {
+      let gapsInCol = 0
+      for (let row = this.rows - 1; row >= 0; row--) {
         const tile = this.tiles[row][col]
-
-        // Find first tile above the gap 
-        if (tile && this.tiles[row + 1][col] === null) {
-
-          // Process all tiles above the gap
-          for (let curRow = row; curRow >= 0; curRow--) {
-            if (this.tiles[curRow][col]) {
-              isTileFallen = true
-              this.moveTile(curRow, col, curRow + 1, col)
-            }
-          }
+        if (tile === null) {
+          gapsInCol++
+        } else if (tile && gapsInCol > 0) {
+          this.moveTile(row, col, row + gapsInCol, col, gapsInCol)
         }
       }
+      gapsInColMax = Math.max(gapsInCol, gapsInColMax)
     }
 
-    if (isTileFallen) {
-      this.addNewTiles()
-    }
+    return gapsInColMax
   }
   
   addNewTiles() {
-    let isTileAdded = false
+    for (let col = 0; col < this.cols; col++) {
+      let gapsInCol = 0
+      for (let row = this.rows - 1; row >= 0; row--) {
+        let tile = this.tiles[row][col]
 
-    for (let row = this.rows - 1; row >= 0; row--) {
-      for (let col = 0; col < this.cols; col++) {
-        const tile = this.tiles[row][col]
-        let startRow = 0
-        
-        // Special case for fisrt and last columns on the board
-        if (col === 0 || col === this.cols - 1) {
-          startRow = 1
-        }
-
-        // Check if there is place for adding a new tile
-        if (tile === null && !this.tiles[startRow][col]) {
-          isTileAdded = true
-          this.addTile(startRow, col, this.getRandomTileId())
+        if (tile === null) {
+          gapsInCol++
+          const newTile = this.createTile(-gapsInCol, col, this.getRandomTileId())
+          const pos = this.fromIndex(row, col)
+          this.tiles[row][col] = newTile
+          this.addChild(newTile)
+          this.addTween(newTile, pos.x, pos.y, gapsInCol * 2)
         }
       }
     }
+  }
 
-    if (isTileAdded) {
-      this.fallDown()
+  checkCascade() {
+    for (let row = 0; row < this.rows; row++) {
+      for (let col = 0; col < this.cols; col++) {
+        // this.findMatch(row, col)
+      }
     }
   }
 
@@ -312,13 +315,17 @@ export default class Board extends Phaser.Group {
     this.tiles[row2][col2] = tempTile
   }
 
-  moveTile(rowFrom, colFrom, rowTo, colTo) {
+  moveTile(rowFrom, colFrom, rowTo, colTo, durationMultiplier = 1) {
     const tile = this.tiles[rowFrom][colFrom]
-    const tween = this.game.add.tween(tile)
-      .to(this.fromIndex(rowTo, colTo), config.time.tween.fall, 'Linear', true)
-    
+    const pos = this.fromIndex(rowTo, colTo)
+    const tween = this.addTween(tile, pos.x, pos.y, durationMultiplier)
+      
     this.swapTiles(rowFrom, colFrom, rowTo, colTo)
     return tween
+  }
+
+  setTilePos(tile, row, col) {
+    this.tiles[row][col] = tile
   }
 
   checkBounds(row, col) {
@@ -342,28 +349,14 @@ export default class Board extends Phaser.Group {
     }
   }
 
-  addTween(tile, x, y, time, easeType: string = 'Linear') {
-    let tween = this.game.add.tween(tile).to({
-      x, y
-    }, time, easeType, true)
+  addTween(tile, x, y, durationMultiplier = 1, easeType: string = 'Cubic') {
+    const time = durationMultiplier * config.time.tween.fall
+    // console.log(time);
+    return this.game.add.tween(tile).to({ x, y }, time, easeType, true)
   }
   
   update() {
-    // let direction = this.swipe.check();
-    // if (direction !== null) {
-    //   // direction= { x: x, y: y, direction: direction }
-    //   switch (direction.direction) {
-    //     case this.swipe.DIRECTION_LEFT:
-    //     case this.swipe.DIRECTION_RIGHT:
-    //     case this.swipe.DIRECTION_UP:
-    //     case this.swipe.DIRECTION_DOWN:
-    //     case this.swipe.DIRECTION_UP_LEFT:
-    //     case this.swipe.DIRECTION_UP_RIGHT:
-    //     case this.swipe.DIRECTION_DOWN_LEFT:
-    //     case this.swipe.DIRECTION_DOWN_RIGHT:
-    //     default: console.log('Ooops, unknown swipe direction')
-    //   }
-    // }
+    
   }
 
 
