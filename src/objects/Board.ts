@@ -1,6 +1,7 @@
 import 'phaser'
 import * as Swipe from 'phaser-swipe'
 
+import Level from './Level'
 import Tile from './Tile'
 import Outline from './Outline'
 
@@ -14,8 +15,8 @@ export default class Board extends Phaser.Group {
   rows: number
   cols: number
   tileTypes: number
-  tilesSpec: Array<Array<number>>
   tiles: Array<Array<Tile>>
+  level: Level
 
   outline: Outline
   isMoving: boolean
@@ -26,9 +27,11 @@ export default class Board extends Phaser.Group {
     super(game)
     this.rows = config.board.rows
     this.cols = config.board.cols
+    this.level = new Level(config.board.startLevelId)
     this.tileTypes = config.board.tileTypes
-    this.tilesSpec = config.board.defaultTiles
     this.tiles = []
+
+    console.log(this.level);
 
     this.isMoving = false
     this.init()
@@ -58,11 +61,9 @@ export default class Board extends Phaser.Group {
     for (let i = 0; i < this.rows; i++) {
       this.tiles[i] = []
       for (let j = 0; j < this.cols; j++) {
-        const typeId = this.tilesSpec[i][j]
+        const typeId = this.level.data[i][j]
         if (typeId > 0) {
           this.addTile(i, j, typeId)
-        } else if (typeId === -1) {
-          // this.addBlockedTile(i, j)
         }
       }
     }
