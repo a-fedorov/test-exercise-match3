@@ -1,5 +1,4 @@
 import 'phaser'
-import * as Swipe from 'phaser-swipe'
 
 import Level from './Level'
 import Toolbar from './Toolbar'
@@ -25,8 +24,6 @@ export default class Board extends Phaser.Group {
   outline: Outline
   isMoving: boolean
   
-  swipe: Swipe
-
   constructor(game) {
     super(game)
     this.rows = config.board.rows
@@ -399,10 +396,15 @@ export default class Board extends Phaser.Group {
   }
   
   update() {
-    if (this.isGameOver && this.game.tweens.getAll().length === 0) {
-      if (confirm('Game over. Play again ?')) {
-        this.game.state.restart()
-      }
+    if (this.isGameOver && this.isMoving === false) {
+      setTimeout(() => {
+        // Show popup only when all tweens will be completed
+        if (this.game && this.game.tweens.getAll().length === 0) {
+          if (confirm('Game over. Play again ?')) {
+            this.game.state.restart()
+          }
+        }
+      }, 500);
     }
   }
 

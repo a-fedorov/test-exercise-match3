@@ -34,6 +34,6 @@ export default class extends Phaser.State {
       ${this.game.rnd.integerInRange(0, 255)},
       ${this.game.rnd.integerInRange(0, 255)},
       ${this.game.rnd.integerInRange(0, 255)},
-      0.6`
+      0.6)`
   }
 }
