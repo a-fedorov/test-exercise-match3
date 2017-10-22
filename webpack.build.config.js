@@ -2,6 +2,7 @@ var webpack = require('webpack');
 var path = require('path');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var CleanWebpackPlugin = require('clean-webpack-plugin');
+var UglifyJSPlugin = require('uglifyjs-webpack-plugin')
 
 module.exports = {
     entry: path.join(__dirname, 'src/app.ts'),
@@ -20,37 +21,33 @@ module.exports = {
         }
     },
     plugins: [
-        // new CleanWebpackPlugin([
-        //     path.join(__dirname, 'dist')
-        // ]),
+        new CleanWebpackPlugin([
+            path.join(__dirname, 'dist')
+        ]),
         new webpack.ProvidePlugin({
             'config': 'config'
         }),
         new HtmlWebpackPlugin({
-            title: 'DEV MODE: Match3-mini-game!',
+            title: 'BUILD: Match3-mini-game!',
             template: path.join(__dirname, 'templates/index.ejs')
+        }),
+        new UglifyJSPlugin({
+          uglifyOptions: {
+            compress: {
+              warnings: false,
+              properties: false
+            }
+          }
         })
     ],
-    devServer: {
-        contentBase: path.join(__dirname, 'dist'),
-        compress: true,
-        port: 9000,
-        inline: true,
-        watchOptions: {
-            aggregateTimeout: 300,
-            poll: true,
-            ignored: /node_modules/
-        }
-    },
     module: {
         rules: [
-            { test: /\.ts$/, enforce: 'pre', loader: 'tslint-loader' },
-            { test: /\.(jpg|png|xml|mp3|ogg|m4a|fnt|ac3)$/, loader: 'file-loader?name=assets/[hash].[ext]' },
-            { test: /pixi\.js$/, loader: 'expose-loader?PIXI' },
-            { test: /phaser-split\.js$/, loader: 'expose-loader?Phaser' },
-            { test: /p2\.js$/, loader: 'expose-loader?p2' },
-            { test: /\.ts$/, loader: 'ts-loader', exclude: '/node_modules/' }
+          { test: /\.ts$/, enforce: 'pre', loader: 'tslint-loader' },
+          { test: /\.(jpg|png|xml|mp3|ogg|m4a|fnt|ac3)$/, loader: 'file-loader?name=assets/[hash].[ext]' },
+          { test: /pixi\.js$/, loader: 'expose-loader?PIXI' },
+          { test: /phaser-split\.js$/, loader: 'expose-loader?Phaser' },
+          { test: /p2\.js$/, loader: 'expose-loader?p2' },
+          { test: /\.ts$/, exclude: '/node_modules/', loader: 'ts-loader' }
         ]
-    },
-    devtool: 'source-map'
+    }
 };
