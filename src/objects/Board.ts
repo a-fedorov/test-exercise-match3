@@ -2,6 +2,7 @@ import 'phaser'
 import * as Swipe from 'phaser-swipe'
 
 import Level from './Level'
+import Toolbar from './Toolbar'
 import Tile from './Tile'
 import Outline from './Outline'
 
@@ -11,12 +12,15 @@ interface TileData {
 }
 
 export default class Board extends Phaser.Group {
+  isGameOver: boolean;
   background: Phaser.Sprite
   rows: number
   cols: number
   tileTypes: number
   tiles: Array<Array<Tile>>
+
   level: Level
+  toolbar: Toolbar
 
   outline: Outline
   isMoving: boolean
@@ -27,17 +31,20 @@ export default class Board extends Phaser.Group {
     super(game)
     this.rows = config.board.rows
     this.cols = config.board.cols
-    this.level = new Level(config.board.startLevelId)
     this.tileTypes = config.board.tileTypes
     this.tiles = []
-
-    console.log(this.level);
+    this.level = new Level(config.board.startLevelId)
+    this.toolbar = new Toolbar(this, {
+      level: this.level.id,
+      mission: this.level.mission
+    })
 
     this.isMoving = false
     this.init()
   }
   
   init() {
+    // Only for debug from browser console
     (window as any).board = this;
 
     this.fill()
@@ -91,6 +98,10 @@ export default class Board extends Phaser.Group {
   }
 
   onTileSelect(tile: Tile) {
+    if (this.isGameOver) {
+      return
+    }
+
     let x = tile.x
     let y = tile.y
 
@@ -256,7 +267,10 @@ export default class Board extends Phaser.Group {
   }
 
   removeTilesAll(matchedTiles, isVerticalMatch: boolean) {
-    matchedTiles.forEach(t => this.removeTile(t.row, t.col))
+    matchedTiles.forEach(t => {
+      this.updateMissionInfo(t)
+      this.removeTile(t.row, t.col)
+    })
 
     this.game.time.events.add(config.time.tween.remove + 50, () => {
       this.fallDown()
@@ -335,6 +349,8 @@ export default class Board extends Phaser.Group {
     }
 
     this.isMoving = false
+
+    
   }
 
   swapTiles(row1, col1, row2, col2) {
@@ -343,14 +359,14 @@ export default class Board extends Phaser.Group {
     this.tiles[row2][col2] = tempTile
   }
 
-  moveTile(rowFrom, colFrom, rowTo, colTo, durationMultiplier = 1) {
-    const tile = this.tiles[rowFrom][colFrom]
-    const pos = this.fromIndex(rowTo, colTo)
-    const tween = this.addTween(tile, pos.x, pos.y, durationMultiplier)
+  // moveTile(rowFrom, colFrom, rowTo, colTo, durationMultiplier = 1) {
+  //   const tile = this.tiles[rowFrom][colFrom]
+  //   const pos = this.fromIndex(rowTo, colTo)
+  //   const tween = this.addTween(tile, pos.x, pos.y, durationMultiplier)
       
-    this.swapTiles(rowFrom, colFrom, rowTo, colTo)
-    return tween
-  }
+  //   this.swapTiles(rowFrom, colFrom, rowTo, colTo)
+  //   return tween
+  // }
 
   setTilePos(tile, row, col) {
     this.tiles[row][col] = tile
@@ -379,20 +395,37 @@ export default class Board extends Phaser.Group {
 
   addTween(tile, x, y, durationMultiplier = 1, easeType: string = 'Cubic') {
     const time = durationMultiplier * config.time.tween.fall
-    // console.log(time);
     return this.game.add.tween(tile).to({ x, y }, time, easeType, true)
   }
   
   update() {
-    // if (this.game.tweens.getAll().length)
-    // console.log(this.game.tweens.getAll().length);
-    // if (this.game.tweens.getAll().length === 0) {
-    //   this.checkCascade()
-    // }
+    if (this.isGameOver && this.game.tweens.getAll().length === 0) {
+      if (confirm('Game over. Play again ?')) {
+        this.game.state.restart()
+      }
+    }
   }
-
 
   getRandomTileId(): number {
     return this.game.rnd.integerInRange(1, this.tileTypes)
+  }
+
+  updateMissionInfo(t: TileData) {
+    if (this.tiles[t.row][t.col].typeId === this.level.missionCounter.type) {
+      this.level.missionCounter.value++
+      let leftToComplete = this.level.mission.amount - this.level.missionCounter.value
+      
+      if (this.level.mission.amount <= this.level.missionCounter.value) {
+        leftToComplete = 0
+        this.gameOver()
+      }
+      
+      this.toolbar.updateMissionCounter(leftToComplete)
+    }
+  }
+  
+  gameOver() {
+    this.isGameOver = true
+    console.log('GAME OVER');    
   }
 }
