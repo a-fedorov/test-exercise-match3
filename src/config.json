@@ -27,7 +27,7 @@
       "id": 1,
       "mission": {
         "type": 4, 
-        "amount": 4
+        "amount": 20
       },
       "data": [
         [-1,1,2,3,4,1,-1],
